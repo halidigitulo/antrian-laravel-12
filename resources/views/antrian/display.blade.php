@@ -31,11 +31,16 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-8">
+                @php
+                    // Ambil ID video dari URL embed
+                    preg_match('/embed\/([a-zA-Z0-9_-]+)/', $profile->video_url, $matches);
+                    $videoId = $matches[1] ?? '';
+                @endphp
                 <!-- Video Container -->
                 <div id="video-container" class="fade-in">
                     <iframe id="video-frame" style="border-radius: 15px;" width="100%" height="450px"
-                        src="{{ $profile->video_url }}/?autoplay=1&mute=0" frameborder="0" allow="autoplay; encrypted-media"
-                        allowfullscreen>
+                        src="{{ $profile->video_url }}?autoplay=1&mute=0&loop=1&playlist={{ $videoId }}"
+                        frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
                     </iframe>
                 </div>
 
@@ -47,16 +52,44 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            {{-- <div class="col-md-4">
                 <div class="card" style="height: 450px;">
                     <div class="card-header bg-danger">
                         <h5 class="card-title text-center text-white" style="font-size: 3rem">ANTRIAN SAAT INI</h5>
                     </div>
                     <div class="card-body text-center align-middle">
-                        {{-- <h1>LOKET </h1> --}}
+                        <h1>LOKET </h1>
                         <h1 id="loket-number" class="mt-4">-</h1>
                         <h1>ANTRIAN</h1>
                         <h1 id="called-queue">-</h1>
+                    </div>
+                </div>
+            </div> --}}
+            <div class="col-md-4">
+                <div class="card shadow-lg border-0" style="height: 450px; border-radius: 15px;">
+                    <div class="card-header bg-danger text-center"
+                        style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                        <h5 class="card-title text-white mb-0" style="font-size: 2rem; letter-spacing: 2px;">ANTRIAN SAAT
+                            INI</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center p-4"
+                        style="background: linear-gradient(135deg, #fff, #f8f9fa);">
+                        <div class="row w-100">
+                            <!-- Nomor Loket -->
+                            <div class="col-5 d-flex align-items-center justify-content-center"
+                                style="border-right: 3px solid #e9ecef;">
+                                <div class="text-center">
+                                    <h6 class="text-muted mb-2" style="font-size: 1.2rem;">LOKET</h6>
+                                    <h1 id="loket-number" style="font-size: 10rem; font-weight: bold; color: #dc3545;">-
+                                    </h1>
+                                </div>
+                            </div>
+                            <!-- Nomor Antrian -->
+                            <div class="col-7 d-flex flex-column align-items-center justify-content-center">
+                                <h6 class="text-muted mb-2" style="font-size: 1.2rem;">NOMOR ANTRIAN</h6>
+                                <h1 id="called-queue" style="font-size: 5rem; font-weight: bold; color: #0d6efd;">-</h1>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -84,10 +117,30 @@
             opacity: 0;
             transition: opacity 1.5s ease-in-out;
         }
+
+        /* Animasi flip */
+        .flip {
+            animation: flip 0.6s ease-in-out;
+        }
+
+        @keyframes flip {
+            0% {
+                transform: rotateX(0);
+            }
+
+            50% {
+                transform: rotateX(90deg);
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: rotateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 @endpush
 @push('scripts')
-
     <script>
         function updateDateTime() {
             const date = new Date();
@@ -208,7 +261,7 @@
             } = queue.shift();
 
             // Tampilkan ke layar
-            document.getElementById('loket-number').innerText = "LOKET " + loket;
+            document.getElementById('loket-number').innerText = loket;
             document.getElementById('called-queue').innerText = nomor;
 
             // Mulai mainkan suara
@@ -222,7 +275,7 @@
             const soundsPath = '/sounds/';
             const queueParts = queueNumber.split('');
 
-            
+
             const soundSequence = [
                 `${soundsPath}Pasien.wav`, // "Nomor Antrian"
                 ...queueParts.map(part => `${soundsPath}${part}.wav`), // Queue number parts (e.g., "A", "0", "0", "1")
@@ -342,5 +395,18 @@
 
         // Auto-refresh every 30 seconds
         setInterval(fetchBedAvailability, 30000);
+    </script>
+    <script>
+        function updateNumber(selector, newValue) {
+            const el = document.querySelector(selector);
+            if (el.innerText !== newValue) {
+                el.classList.remove("flip");
+                void el.offsetWidth; // restart animasi
+                el.classList.add("flip");
+                setTimeout(() => {
+                    el.innerText = newValue;
+                }, 300); // ganti angka di tengah animasi
+            }
+        }
     </script>
 @endpush
